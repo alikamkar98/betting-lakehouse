@@ -1,0 +1,56 @@
+# Databricks Asset Bundle: the jobs are defined as code in Git and deployed with
+#   databricks bundle deploy
+# The same file could deploy to dev, test and prod workspaces (one target each).
+bundle:
+  name: betting_lakehouse
+
+resources:
+  jobs:
+    # The pipeline: one task per layer, each depends on the one before
+    betting_pipeline:
+      name: betting_pipeline
+      max_concurrent_runs: 1
+      parameters:
+        - name: batch_id
+          default: day1
+        - name: run_id
+          default: "{{job.run_id}}"
+      schedule:
+        # Every morning at 06:00 Vienna time (paused in dev)
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: Europe/Vienna
+        pause_status: PAUSED
+      tasks:
+        - task_key: bronze
+          notebook_task:
+            notebook_path: ./01_bronze.py
+        - task_key: silver
+          depends_on:
+            - task_key: bronze
+          notebook_task:
+            notebook_path: ./02_silver.py
+        - task_key: gold
+          depends_on:
+            - task_key: silver
+          notebook_task:
+            notebook_path: ./03_gold.py
+        - task_key: quality
+          depends_on:
+            - task_key: gold
+          notebook_task:
+            notebook_path: ./04_quality.py
+
+    # Setup: creates the fake source files in the landing volume
+    betting_generate_data:
+      name: betting_generate_data
+      tasks:
+        - task_key: generate_data
+          notebook_task:
+            notebook_path: ./generate_data.py
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-f2c54eb5-2866.cloud.databricks.com
