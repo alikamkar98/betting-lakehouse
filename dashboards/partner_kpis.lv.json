@@ -1,0 +1,241 @@
+{
+  "datasets": [
+    {
+      "name": "kpis",
+      "displayName": "Partner daily KPIs",
+      "queryLines": [
+        "SELECT k.bet_date, p.partner_name, k.bets, k.active_customers, k.turnover, k.settled_turnover, k.payouts, k.ggr, k.margin ",
+        "FROM workspace.betting.gold_partner_daily_kpis k ",
+        "JOIN workspace.betting.dim_partner p ON k.partner_id = p.partner_id"
+      ]
+    },
+    {
+      "name": "totals",
+      "displayName": "Totals",
+      "queryLines": [
+        "SELECT SUM(turnover) AS turnover, SUM(ggr) AS ggr, ",
+        "ROUND(SUM(ggr) / SUM(settled_turnover) * 100, 2) AS margin_pct ",
+        "FROM workspace.betting.gold_partner_daily_kpis"
+      ]
+    },
+    {
+      "name": "rejects",
+      "displayName": "Quarantine by reason",
+      "queryLines": [
+        "SELECT batch_id, reject_reason, COUNT(*) AS rejected_rows ",
+        "FROM workspace.betting.quarantine_bets ",
+        "GROUP BY batch_id, reject_reason"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "partner_kpis",
+      "displayName": "Partner KPIs",
+      "layout": [
+        {
+          "widget": {
+            "name": "title",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Betting Lakehouse: partner KPIs\n",
+                "Source: gold tables in workspace.betting (built by the betting_pipeline job). GGR = settled turnover - payouts. Margin = GGR / settled turnover."
+              ]
+            }
+          },
+          "position": { "x": 0, "y": 0, "width": 6, "height": 2 }
+        },
+        {
+          "widget": {
+            "name": "counter_turnover",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [ { "name": "turnover", "expression": "`turnover`" } ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": { "value": { "fieldName": "turnover", "displayName": "Turnover" } },
+              "frame": { "showTitle": true, "title": "Turnover (all stakes)" }
+            }
+          },
+          "position": { "x": 0, "y": 2, "width": 2, "height": 3 }
+        },
+        {
+          "widget": {
+            "name": "counter_ggr",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [ { "name": "ggr", "expression": "`ggr`" } ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": { "value": { "fieldName": "ggr", "displayName": "GGR" } },
+              "frame": { "showTitle": true, "title": "GGR (what the book kept)" }
+            }
+          },
+          "position": { "x": 2, "y": 2, "width": 2, "height": 3 }
+        },
+        {
+          "widget": {
+            "name": "counter_margin",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "totals",
+                  "fields": [ { "name": "margin_pct", "expression": "`margin_pct`" } ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": { "value": { "fieldName": "margin_pct", "displayName": "Margin %" } },
+              "frame": { "showTitle": true, "title": "Margin %" }
+            }
+          },
+          "position": { "x": 4, "y": 2, "width": 2, "height": 3 }
+        },
+        {
+          "widget": {
+            "name": "bar_ggr",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    { "name": "bet_date", "expression": "`bet_date`" },
+                    { "name": "partner_name", "expression": "`partner_name`" },
+                    { "name": "sum(ggr)", "expression": "SUM(`ggr`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "bet_date", "scale": { "type": "categorical" }, "displayName": "Day" },
+                "y": { "fieldName": "sum(ggr)", "scale": { "type": "quantitative" }, "displayName": "GGR" },
+                "color": { "fieldName": "partner_name", "scale": { "type": "categorical" }, "displayName": "Partner" }
+              },
+              "mark": { "layout": "group" },
+              "frame": { "showTitle": true, "title": "GGR per partner per day" }
+            }
+          },
+          "position": { "x": 0, "y": 5, "width": 3, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "bar_turnover",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    { "name": "bet_date", "expression": "`bet_date`" },
+                    { "name": "partner_name", "expression": "`partner_name`" },
+                    { "name": "sum(turnover)", "expression": "SUM(`turnover`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "bet_date", "scale": { "type": "categorical" }, "displayName": "Day" },
+                "y": { "fieldName": "sum(turnover)", "scale": { "type": "quantitative" }, "displayName": "Turnover" },
+                "color": { "fieldName": "partner_name", "scale": { "type": "categorical" }, "displayName": "Partner" }
+              },
+              "mark": { "layout": "group" },
+              "frame": { "showTitle": true, "title": "Turnover per partner per day" }
+            }
+          },
+          "position": { "x": 3, "y": 5, "width": 3, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "bar_customers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    { "name": "partner_name", "expression": "`partner_name`" },
+                    { "name": "bet_date", "expression": "`bet_date`" },
+                    { "name": "sum(active_customers)", "expression": "SUM(`active_customers`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "partner_name", "scale": { "type": "categorical" }, "displayName": "Partner" },
+                "y": { "fieldName": "sum(active_customers)", "scale": { "type": "quantitative" }, "displayName": "Active customers" },
+                "color": { "fieldName": "bet_date", "scale": { "type": "categorical" }, "displayName": "Day" }
+              },
+              "mark": { "layout": "group" },
+              "frame": { "showTitle": true, "title": "Active customers per partner" }
+            }
+          },
+          "position": { "x": 0, "y": 11, "width": 3, "height": 6 }
+        },
+        {
+          "widget": {
+            "name": "bar_rejects",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "rejects",
+                  "fields": [
+                    { "name": "reject_reason", "expression": "`reject_reason`" },
+                    { "name": "batch_id", "expression": "`batch_id`" },
+                    { "name": "sum(rejected_rows)", "expression": "SUM(`rejected_rows`)" }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": { "fieldName": "reject_reason", "scale": { "type": "categorical" }, "displayName": "Reason" },
+                "y": { "fieldName": "sum(rejected_rows)", "scale": { "type": "quantitative" }, "displayName": "Rejected rows" },
+                "color": { "fieldName": "batch_id", "scale": { "type": "categorical" }, "displayName": "Batch" }
+              },
+              "mark": { "layout": "group" },
+              "frame": { "showTitle": true, "title": "Data quality: quarantined bets by reason" }
+            }
+          },
+          "position": { "x": 3, "y": 11, "width": 3, "height": 6 }
+        }
+      ]
+    }
+  ]
+}

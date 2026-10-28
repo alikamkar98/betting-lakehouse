@@ -63,7 +63,19 @@
 # MAGIC ORDER BY customer_id, valid_from
 
 # COMMAND ----------
-# MAGIC %md ## 7. Lineage: bet B-000003 was open on day 1 and won on day 2. Bronze keeps both versions; silver and gold keep the newest.
+# MAGIC %md ## 7. SCD2 in action: customer C-031 moved from AT to DE on day 2. Old bets stay with AT, new bets go to DE.
+
+# COMMAND ----------
+# MAGIC %sql
+# MAGIC SELECT d.country, f.customer_key, COUNT(*) AS bets, MIN(f.placed_at) AS first_bet, MAX(f.placed_at) AS last_bet
+# MAGIC FROM workspace.betting.fact_bet f
+# MAGIC JOIN workspace.betting.dim_customer d ON f.customer_key = d.customer_key
+# MAGIC WHERE f.customer_id = 'C-031'
+# MAGIC GROUP BY d.country, f.customer_key
+# MAGIC ORDER BY first_bet
+
+# COMMAND ----------
+# MAGIC %md ## 8. Lineage: bet B-000003 was open on day 1 and won on day 2. Bronze keeps both versions; silver and gold keep the newest.
 
 # COMMAND ----------
 # MAGIC %sql
@@ -74,7 +86,7 @@
 # MAGIC SELECT 'bronze', bet_id, status, CAST(stake AS DECIMAL(10,2)), NULL, source_file, batch_id, CAST(updated_at AS TIMESTAMP) FROM workspace.betting.bronze_bets WHERE bet_id = 'B-000003'
 
 # COMMAND ----------
-# MAGIC %md ## 8. The partner KPI table (what Power BI would show)
+# MAGIC %md ## 9. The partner KPI table (what Power BI would show)
 
 # COMMAND ----------
 # MAGIC %sql

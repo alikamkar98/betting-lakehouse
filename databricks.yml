@@ -56,6 +56,13 @@ resources:
           notebook_task:
             notebook_path: ./generate_data.py
 
+  dashboards:
+    # Charts on the gold KPI table (what Power BI would show)
+    partner_kpis:
+      display_name: Betting partner KPIs
+      file_path: ./dashboards/partner_kpis.lv.json
+      warehouse_id: 1836509651847782
+
 targets:
   dev:
     mode: development
