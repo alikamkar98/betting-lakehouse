@@ -63,15 +63,15 @@
 # MAGIC ORDER BY customer_id, valid_from
 
 # COMMAND ----------
-# MAGIC %md ## 7. Lineage: one gold bet traced back to bronze and the source file
+# MAGIC %md ## 7. Lineage: bet B-000003 was open on day 1 and won on day 2. Bronze keeps both versions; silver and gold keep the newest.
 
 # COMMAND ----------
 # MAGIC %sql
-# MAGIC SELECT 'gold' AS layer, bet_id, status, stake, CAST(NULL AS STRING) AS source_file, batch_id FROM workspace.betting.fact_bet WHERE bet_id = 'B-000001'
+# MAGIC SELECT 'gold' AS layer, bet_id, status, stake, payout, CAST(NULL AS STRING) AS source_file, batch_id, updated_at FROM workspace.betting.fact_bet WHERE bet_id = 'B-000003'
 # MAGIC UNION ALL
-# MAGIC SELECT 'silver', bet_id, status, stake, source_file, batch_id FROM workspace.betting.silver_bets WHERE bet_id = 'B-000001'
+# MAGIC SELECT 'silver', bet_id, status, stake, NULL, source_file, batch_id, updated_at FROM workspace.betting.silver_bets WHERE bet_id = 'B-000003'
 # MAGIC UNION ALL
-# MAGIC SELECT 'bronze', bet_id, status, CAST(stake AS DECIMAL(10,2)), source_file, batch_id FROM workspace.betting.bronze_bets WHERE bet_id = 'B-000001'
+# MAGIC SELECT 'bronze', bet_id, status, CAST(stake AS DECIMAL(10,2)), NULL, source_file, batch_id, CAST(updated_at AS TIMESTAMP) FROM workspace.betting.bronze_bets WHERE bet_id = 'B-000003'
 
 # COMMAND ----------
 # MAGIC %md ## 8. The partner KPI table (what Power BI would show)

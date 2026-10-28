@@ -40,6 +40,14 @@ resources:
           notebook_task:
             notebook_path: ./04_quality.py
 
+    # Business questions from sql/analysis.sql (run on demand)
+    betting_analysis:
+      name: betting_analysis
+      tasks:
+        - task_key: analysis
+          notebook_task:
+            notebook_path: ./05_analysis.py
+
     # Setup: creates the fake source files in the landing volume
     betting_generate_data:
       name: betting_generate_data
